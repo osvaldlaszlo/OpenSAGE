@@ -29,7 +29,7 @@ class ExportW3D(bpy.types.Operator, ExportHelper):
     bl_idname = 'export_mesh.westwood_w3d'
     bl_label = 'Export W3D'
     bl_options = {'UNDO', 'PRESET'}
-    
+   
     filename_ext = '.w3d'
     filter_glob = StringProperty(default='*.w3d', options={'HIDDEN'})
     
@@ -41,7 +41,7 @@ class ExportW3D(bpy.types.Operator, ExportHelper):
                 ('ANIMATION', "Animation", "Animation settings")),
             name="ui_tab",
             description="Export setting categories",
-    )
+    )      
 
     export_mode = EnumProperty(
             name="Export Mode",
@@ -91,7 +91,7 @@ class ExportW3D(bpy.types.Operator, ExportHelper):
         context.scene[self.scene_key] = export_props
     
     def execute(self, context):
-        from .blender.exp import w3d_export
+        from . import w3d_export
 
         if self.will_save_settings:
             self.save_settings(context)

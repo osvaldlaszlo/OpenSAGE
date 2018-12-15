@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{6750d19a-6f48-45bf-94a3-cab730de55e8}</ProjectGuid>
+    <ProjectHome />
+    <StartupFile>w3d_export.py</StartupFile>
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId />
+    <Name>OpenSage.Tools.BlenderPlugin</Name>
+    <SearchPath>modules</SearchPath>
+  </PropertyGroup>
+  <Target Name="CoreCompile" />
+  <Target Name="BundlePlugin" AfterTargets="AfterBuild">
+    <Message Text="Hello world" Importance="high" />
+    <ZipDirectory SourceDirectory="io_scene_w3d" DestinationFile="$(OutputPath)\bin\BlenderW3D.zip" Overwrite="true" />
+  </Target>
+  <ItemGroup>
+    <Compile Include="addon/io_scene_w3d/w3d_export.py" />
+    <Compile Include="addon/io_scene_w3d/__init___.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="addon\" />
+    <Folder Include="addon\io_scene_w3d\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+</Project>
