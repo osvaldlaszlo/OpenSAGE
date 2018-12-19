@@ -1,7 +1,25 @@
-import bpy
-from bpy.types import Operator, AddonPreferences
-from bpy_extras.io_utils import ImportHelper, ExportHelper
+bl_info = {
+    "name": "Westwood W3D Format (.w3d)",
+    "author": "OpenSage Developer Team",
+    "version": (0, 0, 1),
+    "blender": (2, 80, 0),
+    "location": "File > Import-Export > Westwood W3D (.w3d)",
+    "description": "Import or Export the Westwood W3D-Format (.w3d)",
+    "warning": "Still in Progress",
+    "wiki_url": "https://github.com/OpenSAGE/OpenSAGE",
+    "category": "Import-Export",
+}
 
+if "bpy" in locals():
+    import importlib
+    if "import_w3d" in locals():
+        importlib.reload(import_w3d)
+    if "export_w3d" in locals():
+        importlib.reload(export_w3d)
+else:
+    import bpy
+
+from bpy_extras.io_utils import ExportHelper
 from bpy.props import (CollectionProperty,
                        StringProperty,
                        BoolProperty,
@@ -10,29 +28,34 @@ from bpy.props import (CollectionProperty,
                        IntProperty)
 
 
-bl_info = {
-    'name': 'Import/Export Westwood W3D Format (.w3d)',
-    'author': 'OpenSage Developers',
-    'version': (0, 0, 1),
-    "blender": (2, 80, 0),
-    'location': 'File > Import/Export > Westerwood W3D (.w3d)',
-    'description': 'Import or Export the Westerwood W3D-Format (.w3d)',
-    'warning': 'Still in Progress',
-    'wiki_url': 'https://github.com/OpenSAGE/OpenSAGE',
-    'tracker_url': 'https://github.com/OpenSAGE/OpenSAGE/issues',
-    'support': 'OFFICIAL',
-    'category': 'Import-Export'}
+class ImportW3D(bpy.types.Operator):
+    bl_idname = "import_mesh.westwood_w3d"
+    bl_label = "Import W3D"
+    bl_options = {'UNDO'}
 
-# Export class
-class ExportW3D(bpy.types.Operator, ExportHelper):
-    '''Export from Westwood 3D file format (.w3d)'''
+    filepath = StringProperty(subtype='FILE_PATH')
+    filter_glob = StringProperty(default="*.w3d", options={'HIDDEN'})
+
+    def execute(self, context):
+        from . import import_w3d
+        import_w3d.read(self.filepath)
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        wm.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
+class ExportW3D(bpy.types.Operator):
     bl_idname = 'export_mesh.westwood_w3d'
     bl_label = 'Export W3D'
     bl_options = {'UNDO', 'PRESET'}
-   
-    filename_ext = '.w3d'
+
+    filepath = StringProperty(subtype='FILE_PATH')
+    filename_ext = ".w3d"
     filter_glob = StringProperty(default='*.w3d', options={'HIDDEN'})
-    
+
     ui_tab = EnumProperty(
             items=(('GENERAL', "General", "General settings"),
                 #('MESHES', "Meshes", "Mesh settings"),
@@ -41,7 +64,7 @@ class ExportW3D(bpy.types.Operator, ExportHelper):
                 ('ANIMATION', "Animation", "Animation settings")),
             name="ui_tab",
             description="Export setting categories",
-    )      
+    )    
 
     export_mode = EnumProperty(
             name="Export Mode",
@@ -49,15 +72,15 @@ class ExportW3D(bpy.types.Operator, ExportHelper):
                 ('S', "Skeleton", "This will export the hierarchy tree without any geometry or animation data"), 
                 ('A', "Animation", "This will export the animation without any geometry data or skeletons"), 
                 ('HAM', "HierarchicalAnimatedModel", "This will export the meshes with the hierarchy and animation into one file")
-                ),			
-            default='M',)	
+                ),          
+            default='M',)   
 
     export_compress = EnumProperty(
             name="Compression",
              items=(('U', "Uncompressed", "This will not compress the animations"), 
                 ('TC', "TimeCoded", "This will export the animation with keyframes"), 
                 ('AD', "AdaptiveDelta", "This will use adaptive delta compression to reduce size"), 
-                ),			
+                ),          
             default='TC',)
 
     will_save_settings = BoolProperty(default=False)
@@ -65,7 +88,29 @@ class ExportW3D(bpy.types.Operator, ExportHelper):
     # Custom scene property for saving settings
     scene_key = "w3dExportSettings"
 
-    #
+
+    def execute(self, context):
+        from . import export_w3d
+
+        if self.will_save_settings:
+            self.save_settings(context)
+
+        # All custom export settings are stored in this container.
+        export_settings = {}
+
+        export_settings['w3d_mode'] = export_mode
+        export_settings['w3d_compression'] = animation_compression
+
+        export_w3d.save(self.filepath, context, export_settings)
+        return {'FINISHED'}
+
+    def save_settings(self, context):
+        # find all export_ props
+        all_props = self.properties
+        export_props = {x: getattr(self, x) for x in dir(all_props)
+                        if x.startswith("export_") and all_props.get(x) is not None}
+
+        context.scene[self.scene_key] = export_props
 
     def invoke(self, context, event):
         settings = context.scene.get(self.scene_key)
@@ -80,29 +125,8 @@ class ExportW3D(bpy.types.Operator, ExportHelper):
                 self.report({"ERROR"}, "Loading export settings failed. Removed corrupted settings")
                 del context.scene[self.scene_key]
 
-        return ExportHelper.invoke(self, context, event)
-
-    def save_settings(self, context):
-        # find all export_ props
-        all_props = self.properties
-        export_props = {x: getattr(self, x) for x in dir(all_props)
-                        if x.startswith("export_") and all_props.get(x) is not None}
-
-        context.scene[self.scene_key] = export_props
-    
-    def execute(self, context):
-        from . import w3d_export
-
-        if self.will_save_settings:
-            self.save_settings(context)
-
-        # All custom export settings are stored in this container.
-        export_settings = {}
-
-        export_settings['w3d_mode'] = export_mode
-        export_settings['w3d_compression'] = animation_compression
-
-        return w3d_export.save(self.filepath, context, export_settings)
+        ExportHelper.invoke(self, context, event)
+        return {'RUNNING_MODAL'}
 
     def draw(self, context):
         self.layout.prop(self, 'ui_tab', expand=True)
@@ -118,31 +142,27 @@ class ExportW3D(bpy.types.Operator, ExportHelper):
     def draw_animation_settings(self):
         col = self.layout.box().column()
         col.prop(self, 'export_compress')
-        
-def menu_func_export(self, context):
+
+
+
+def menu_import(self, context):
+    self.layout.operator(ImportW3D.bl_idname, text="Westwood W3D (.w3d)")
+
+def menu_export(self, context):
     self.layout.operator(ExportW3D.bl_idname, text='Westwood W3D (.w3d)')
 
-#TODO: import class
-
-
-classes = (
-    ExportW3D,
-    #ImportW3D
-)
 
 def register():
-    for c in classes:
-        bpy.utils.register_class(c)
-    #bpy.utils.register_module(__name__)
-
-    bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
+    bpy.utils.register_class(ImportW3D)
+    bpy.types.TOPBAR_MT_file_import.append(menu_import)
+    bpy.utils.register_class(ExportW3D)
+    bpy.types.TOPBAR_MT_file_export.append(menu_export)
 
 def unregister():
-    for c in classes:
-        bpy.utils.unregister_class(c)
-    #bpy.utils.unregister_module(__name__)
-
-    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
+    bpy.utils.unregister_class(ImportW3D)
+    bpy.types.TOPBAR_MT_file_import.remove(menu_import)
+    bpy.utils.unregister_class(ExportW3D)
+    bpy.types.TOPBAR_MT_file_export.remove(menu_export)
 
 if __name__ == "__main__":
     register()
