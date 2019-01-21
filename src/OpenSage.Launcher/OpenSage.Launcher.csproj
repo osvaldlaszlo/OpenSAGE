@@ -5,16 +5,16 @@
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <RuntimeIdentifiers>win-x64;osx-64;ubuntu-x64</RuntimeIdentifiers>
     <ApplicationIcon>Resources\AppIcon.ico</ApplicationIcon>
-    <TrimUnusedDependencies>true</TrimUnusedDependencies>
-    <RootPackageReference>false</RootPackageReference>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <EmbeddedResource Include="Resources\AppIcon.ico" />
+    <RdXmlFile Include="rd.xml" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.4.3" />
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="1.0.0-alpha-27319-01" />
   </ItemGroup>
 
   <ItemGroup>
